@@ -6,28 +6,40 @@ import 'package:simulador_app/domain/models/loan_model.dart';
 
 class HttpService {
   static Future<void> sendSimulate(LoanModel loan) async {
+    const String url = "$kApiHost/api/simular";
+
+    final Map<String, String> customHeaders = <String, String>{
+      "content-type": "application/json",
+    };
+
     final Map<String, dynamic> payload = {
       "valor_emprestimo": loan.amount.toString(),
-      "instituicoes": loan.currentInstitution,
-      "convenios": loan.currentAgreements,
+      "instituicoes": loan.currentInstitution.isNotEmpty
+          ? [loan.currentInstitution]
+          : loan.institutions,
+      "convenios": [loan.currentAgreements],
       "parcela": loan.installments.intToString,
     };
 
+    final String jsonPayload = jsonEncode(payload);
+
     await http
-        .post(Uri.parse("$kApiHost/api/simular"), body: jsonEncode(payload),)
+        .post(Uri.parse(url), body: jsonPayload, headers: customHeaders)
         .then((response) {
-      print(response.statusCode);
-    }).onError((error, stack) {
-      return null;
+
+    }).onError((error, stackTrace) {
+      print("Erro $error");
     });
   }
 
   static Future<List<String>> getInstitutions(LoanModel loan) async {
-    await http.get(Uri.parse("$kApiHost/api/instituicao")).then((response) {
+    const String url = "$kApiHost/api/instituicao";
+
+    await http.get(Uri.parse(url)).then((response) {
       final dynamic responseJson = json.decode(response.body);
 
       for (Map<String, dynamic> element in responseJson) {
-        loan.institutions!.add(element["valor"]);
+        loan.institutions!.add(element["chave"]);
       }
     }).onError((err, stackTrace) {
       return null;
@@ -41,7 +53,7 @@ class HttpService {
       final dynamic responseJson = json.decode(response.body);
 
       for (Map<String, dynamic> element in responseJson) {
-        loan.agreements!.add(element["valor"]);
+        loan.agreements!.add(element["chave"]);
       }
     }).onError((error, stack) {
       return null;

@@ -16,6 +16,9 @@ LoanModel _$LoanModelFromJson(Map<String, dynamic> json) => LoanModel(
       agreements: (json['agreements'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      simulations: (json['simulations'] as List<dynamic>)
+          .map((e) => SimulationModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
       installments: $enumDecodeNullable(
               _$InstallmentsEnumEnumMap, json['installments']) ??
           InstallmentsEnum.empty,
@@ -27,6 +30,7 @@ Map<String, dynamic> _$LoanModelToJson(LoanModel instance) => <String, dynamic>{
       'currentAgreements': instance.currentAgreements,
       'institutions': instance.institutions,
       'agreements': instance.agreements,
+      'simulations': instance.simulations,
       'installments': _$InstallmentsEnumEnumMap[instance.installments]!,
     };
 
