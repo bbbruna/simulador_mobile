@@ -7,12 +7,14 @@ part "simulation_model.g.dart";
 class SimulationModel {
   late double tax;
   late double installmentValue;
+  late String institutions;
   late String agreement;
   late InstallmentsEnum installments;
 
   SimulationModel({
     this.tax = 0.0,
     this.installmentValue = 0.0,
+    this.institutions = "",
     this.agreement = "",
     this.installments = InstallmentsEnum.empty
   });

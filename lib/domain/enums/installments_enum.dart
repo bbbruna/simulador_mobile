@@ -13,7 +13,7 @@ enum InstallmentsEnum {
   String get intToString {
     switch (this) {
       case InstallmentsEnum.empty:
-        return "";
+        return "0";
       case InstallmentsEnum.thirtySix:
         return "36";
       case InstallmentsEnum.fortyEight:
@@ -31,4 +31,10 @@ enum InstallmentsEnum {
     return InstallmentsEnum.values
         .firstWhere((item) => item.intToString == title);
   }
+
+  factory InstallmentsEnum.fromValue(int value) {
+    return InstallmentsEnum.values
+        .firstWhere((item) => item.value == value);
+  }
+
 }

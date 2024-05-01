@@ -10,7 +10,8 @@ SimulationModel _$SimulationModelFromJson(Map<String, dynamic> json) =>
     SimulationModel(
       tax: (json['tax'] as num?)?.toDouble() ?? 0.0,
       installmentValue: (json['installmentValue'] as num?)?.toDouble() ?? 0.0,
-      agreement: json['agreement'] as String,
+      institutions: json['institutions'] as String? ?? "",
+      agreement: json['agreement'] as String? ?? "",
       installments: $enumDecodeNullable(
               _$InstallmentsEnumEnumMap, json['installments']) ??
           InstallmentsEnum.empty,
@@ -20,6 +21,7 @@ Map<String, dynamic> _$SimulationModelToJson(SimulationModel instance) =>
     <String, dynamic>{
       'tax': instance.tax,
       'installmentValue': instance.installmentValue,
+      'institutions': instance.institutions,
       'agreement': instance.agreement,
       'installments': _$InstallmentsEnumEnumMap[instance.installments]!,
     };

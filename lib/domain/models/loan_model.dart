@@ -7,24 +7,26 @@ part "loan_model.g.dart";
 @JsonSerializable()
 class LoanModel {
   late double amount;
-  late String currentInstitution;
-  late String currentAgreements;
   late List<String>? institutions;
   late List<String>? agreements;
+  late List<String>? institutionsSelected;
+  late List<String>? agreementsSelected;
   late List<SimulationModel>? simulations;
   late InstallmentsEnum installments;
 
   LoanModel({
     this.amount = 0.0,
-    this.currentInstitution = "",
-    this.currentAgreements = "",
     this.institutions,
     this.agreements,
     this.simulations,
+    this.institutionsSelected,
+    this.agreementsSelected,
     this.installments = InstallmentsEnum.empty,
   }) {
     institutions = institutions ?? [];
     agreements = agreements ?? [];
+    institutionsSelected = institutionsSelected ?? [];
+    agreementsSelected = agreementsSelected ?? [];
     simulations = simulations ?? [];
   }
 

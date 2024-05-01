@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:simulador_app/core/services/http_service.dart';
 import 'package:simulador_app/domain/enums/installments_enum.dart';
 import 'package:simulador_app/domain/models/loan_model.dart';
+import 'package:simulador_app/domain/models/simulation_model.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -16,16 +17,12 @@ class _HomeViewState extends State<HomeView> {
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  late LoanModel loanAux = LoanModel();
-
-  late bool canStart = false;
+  late LoanModel auxLoan = LoanModel();
 
   @override
   void initState() {
-    setState(() {
-      initInstitutions();
-      initAgreements();
-    });
+    initInstitutions();
+    initAgreements();
     super.initState();
   }
 
@@ -36,65 +33,108 @@ class _HomeViewState extends State<HomeView> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Simulação APP"),
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        keyboardType: TextInputType.number,
-                        controller: _amountController,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          labelText: "Valor do empréstimo",
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (text) {
-                          if (text == null || text.isEmpty) {
-                            return "Preencha o valor do empréstimo";
-                          }
-                          loanAux.amount = double.parse(_amountController.text);
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      buildDropdownInstallments(),
-                      const SizedBox(height: 20),
-                      buildDropdownInstitutions(),
-                      const SizedBox(height: 20),
-                      buildDropdownAgreements(),
-                      const SizedBox(height: 40),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (!_formKey.currentState!.validate()) {
-                            return;
-                          }
-                          await HttpService.sendSimulate(loanAux);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          elevation: 3,
-                        ),
-                        child: const Text(
-                          "Simular",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ],
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              Form(
+                key: _formKey,
+                child: TextFormField(
+                  keyboardType: TextInputType.number,
+                  controller: _amountController,
+                  decoration: const InputDecoration(
+                    prefix: Text("R\$ "),
+                    border: OutlineInputBorder(),
+                    labelText: "Valor do empréstimo",
                   ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (text) {
+                    if (text == null || text.isEmpty) {
+                      return "Preencha o valor do empréstimo";
+                    }
+                    auxLoan.amount = double.parse(_amountController.text);
+                    return null;
+                  },
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              buildDropdownInstallments(),
+              const SizedBox(height: 20),
+              buildDropdownInstitutions(),
+              const SizedBox(height: 20),
+              buildDropdownAgreements(),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) {
+                    return;
+                  }
+
+                  auxLoan.simulations =
+                      await HttpService.sendSimulation(auxLoan);
+
+                  setState(() {
+                    auxLoan.simulations;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  elevation: 3,
+                ),
+                child: const Text(
+                  "Simular",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+              buildListView(),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget buildListView() {
+    if (auxLoan.simulations!.isEmpty) {
+      return const Text(
+        "Nenhum resultado",
+        style: TextStyle(fontWeight: FontWeight.w400),
+      );
+    }
+    return SizedBox(
+      height: 500,
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: auxLoan.simulations!.length,
+        itemBuilder: (BuildContext context, int index) {
+          final SimulationModel simulation = auxLoan.simulations![index];
+          return Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "R\$ ${auxLoan.amount} - ${simulation.installments.value} x R\$ ${auxLoan.amount ~/ simulation.installments.value}",
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    "${simulation.institutions} (${simulation.agreement}) - ${simulation.tax}%",
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -103,12 +143,12 @@ class _HomeViewState extends State<HomeView> {
 
   Widget buildDropdownInstallments() {
     return DropdownButton<InstallmentsEnum>(
-      value: loanAux.installments.value == 0 ? null : loanAux.installments,
+      value: auxLoan.installments.value == 0 ? null : auxLoan.installments,
       isExpanded: true,
       hint: const Text("Quantidade de parcelas"),
       onChanged: (InstallmentsEnum? value) {
         setState(() {
-          loanAux.installments = value!;
+          auxLoan.installments = value!;
         });
       },
       items: InstallmentsEnum.values
@@ -122,19 +162,20 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget buildDropdownInstitutions() {
-    return DropdownButton<String>(
-      value: loanAux.currentInstitution.isEmpty
-          ? null
-          : loanAux.currentInstitution,
+    return DropdownButtonFormField(
       hint: const Text("Instituição"),
       isExpanded: true,
       onChanged: (String? value) {
         setState(() {
-          loanAux.currentInstitution = value!;
+          if (auxLoan.institutionsSelected!.contains(value)) {
+            auxLoan.institutionsSelected!.remove(value);
+          } else {
+            auxLoan.institutionsSelected!.add(value!);
+          }
         });
       },
       items:
-          loanAux.institutions!.map<DropdownMenuItem<String>>((String value) {
+          auxLoan.institutions!.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value),
@@ -144,17 +185,19 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget buildDropdownAgreements() {
-    return DropdownButton<String>(
+    return DropdownButtonFormField(
       hint: const Text("Convênio"),
-      value:
-          loanAux.currentAgreements.isEmpty ? null : loanAux.currentAgreements,
       isExpanded: true,
       onChanged: (String? value) {
         setState(() {
-          loanAux.currentAgreements = value!;
+          if (auxLoan.agreementsSelected!.contains(value)) {
+            auxLoan.agreementsSelected!.remove(value);
+          } else {
+            auxLoan.agreementsSelected!.add(value!);
+          }
         });
       },
-      items: loanAux.agreements?.map<DropdownMenuItem<String>>((String value) {
+      items: auxLoan.agreements!.map<DropdownMenuItem<String>>((String value) {
         return DropdownMenuItem<String>(
           value: value,
           child: Text(value),
@@ -168,10 +211,12 @@ class _HomeViewState extends State<HomeView> {
   /// init lists
 
   Future<void> initInstitutions() async {
-    loanAux.institutions = await HttpService.getInstitutions(loanAux);
+    auxLoan.institutions = await HttpService.getInstitutions(auxLoan);
+    setState(() => auxLoan.institutions);
   }
 
   Future<void> initAgreements() async {
-    loanAux.agreements = await HttpService.getAgreements(loanAux);
+    auxLoan.agreements = await HttpService.getAgreements(auxLoan);
+    setState(() => auxLoan.agreements);
   }
 }
